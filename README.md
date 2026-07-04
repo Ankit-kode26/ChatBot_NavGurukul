@@ -1,4 +1,5 @@
-# RAG Chatbot — PDF Knowledge Base
+# ChatBot_NavGurukul
+HACKATHON Challenge 1
 
 A production-grade Retrieval-Augmented Generation (RAG) chatbot over large PDF corpora.  
 **Fully open-source stack** · **2–5s latency** · **Source citations**

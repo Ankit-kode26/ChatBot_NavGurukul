@@ -22,7 +22,7 @@ CHUNK_SIZE = 512       # tokens
 CHUNK_OVERLAP = 100    # ~20% overlap
 
 # Retrieval
-TOP_K_RETRIEVE = 20    # candidates from vector DB
+TOP_K_RETRIEVE = 10    # candidates from vector DB (reduced from 20 to speed up reranking)
 TOP_K_RERANK = 5       # final chunks after reranking
 
 # Reranker model (free, local cross-encoder)

@@ -1,0 +1,29 @@
+fastapi==0.115.5
+uvicorn[standard]==0.32.1
+python-multipart==0.0.12
+pydantic==2.10.3
+
+# PDF processing
+PyMuPDF==1.25.1
+
+# OCR (optional — requires Tesseract binary installed separately)
+pytesseract==0.3.13
+Pillow>=10.0.0
+
+# Chunking / tokenization
+tiktoken==0.8.0
+
+# Embeddings + reranking (free, local)
+sentence-transformers>=3.0.0
+torch>=2.0.0
+
+# Vector DB (free, local, HNSW)
+chromadb==0.6.3
+
+# LLM (Groq — free tier)
+groq==0.13.0
+
+# Utilities
+python-dotenv==1.0.1
+langdetect==1.0.9
+numpy>=1.24.0

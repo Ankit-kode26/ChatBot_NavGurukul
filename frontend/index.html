@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>RAG Chatbot — PDF Knowledge Base</title>
+  <meta name="description" content="Retrieval-Augmented Generation chatbot over a private PDF corpus."/>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap"/>
+  <link rel="stylesheet" href="/static/style.css"/>
+</head>
+<body>
+
+  <!-- Mobile overlay -->
+  <div id="overlay" onclick="closeSidebar()"></div>
+
+  <!-- Metrics Modal -->
+  <div id="metrics-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeMetricsModal()">
+    <div class="modal-box" style="max-width:860px">
+      <div class="modal-header">
+        <div>
+          <div class="modal-filename" style="font-family:var(--font);font-size:15px;font-weight:600;color:var(--text-primary)">📊 Evaluation Metrics</div>
+          <div class="modal-page">Overall session · real-time aggregate</div>
+        </div>
+        <button class="btn-modal-close" onclick="closeMetricsModal()">✕</button>
+      </div>
+      <div class="modal-body" id="metrics-modal-body"></div>
+    </div>
+  </div>
+
+  <!-- Full chunk modal -->
+  <div id="chunk-modal" class="modal-overlay hidden" onclick="if(event.target===this)closeModal()">
+    <div class="modal-box">
+      <div class="modal-header">
+        <div>
+          <div id="modal-filename" class="modal-filename"></div>
+          <div id="modal-page" class="modal-page"></div>
+          <div id="modal-scores" class="modal-scores"></div>
+        </div>
+        <div class="modal-actions">
+          <button class="btn-modal-pdf" id="modal-pdf-btn">📄 Open PDF</button>
+          <button class="btn-modal-close" onclick="closeModal()">✕</button>
+        </div>
+      </div>
+      <div class="modal-body">
+        <pre id="modal-text" class="modal-text"></pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- Sidebar -->
+  <aside id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-icon">⚡</span>
+        <span>RAG<span class="logo-accent">Chat</span></span>
+      </div>
+      <div id="db-badge" class="db-badge loading">Connecting…</div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">KNOWLEDGE BASE</div>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <span class="stat-value" id="stat-pdfs">—</span>
+          <span class="stat-label">PDFs</span>
+        </div>
+        <div class="stat-card">
+          <span class="stat-value" id="stat-chunks">—</span>
+          <span class="stat-label">Chunks</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="sidebar-section">
+      <div class="section-label">INGEST PDFs (drop all 10+ here)</div>
+      <div id="drop-zone" class="drop-zone">
+        <span class="drop-icon">📄</span>
+        <span class="drop-text">Drop all PDFs here<br/><small>or click to browse</small></span>
+        <input type="file" id="file-input" accept=".pdf" multiple hidden/>
+      </div>
+      <div id="upload-list" class="upload-list"></div>
+      <button id="btn-ingest" class="btn btn-primary" onclick="triggerIngest()">
+        <span>🔄</span> Start Ingestion
+      </button>
+      <div id="ingest-status" class="ingest-status hidden"></div>
+    </div>
+
+    <div class="sidebar-section">
+      <button class="btn btn-metrics" onclick="showMetrics()">📊 Evaluation Metrics</button>
+      <div id="metrics-panel" class="metrics-panel hidden"></div>
+    </div>
+
+    <div class="sidebar-section" id="pdf-list-section" style="display:none">
+      <details class="pdf-dropdown">
+        <summary class="pdf-dropdown-summary">
+          <span class="section-label" style="display:inline">INGESTED PDFs</span>
+          <span id="pdf-count" class="pdf-count"></span>
+        </summary>
+        <ul id="pdf-list" class="pdf-list"></ul>
+      </details>
+    </div>
+  </aside>
+
+  <!-- Main -->
+  <main id="main">
+    <div class="mobile-topbar">
+      <button class="menu-btn" onclick="toggleSidebar()">☰</button>
+      <div class="mobile-logo">RAG<span>Chat</span></div>
+      <div id="db-badge-mobile" class="db-badge loading" style="margin-left:auto;font-size:10px;">…</div>
+    </div>
+
+    <div id="chat-container">
+      <div id="messages" class="messages">
+        <div class="welcome-msg">
+          <h2>Ask anything from your PDFs</h2>
+          <p>Upload your PDFs in the sidebar, click <strong>Start Ingestion</strong>, then ask questions. Every answer includes source citations and retrieval scores.</p>
+          <div class="example-queries">
+            <span class="eq-label">Try asking:</span>
+            <button class="eq-chip" onclick="setQuery(this)">What are the main topics covered?</button>
+            <button class="eq-chip" onclick="setQuery(this)">Summarize the key findings</button>
+            <button class="eq-chip" onclick="setQuery(this)">What methodology was used?</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="input-area" class="input-area">
+        <textarea
+          id="query-input"
+          class="query-input"
+          placeholder="Ask a question about your documents…"
+          rows="1"
+          onkeydown="handleKey(event)"
+          oninput="autoResize(this)"
+        ></textarea>
+        <button id="send-btn" class="send-btn" onclick="sendQuery()" title="Send (Enter)">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Chunks Panel -->
+    <div id="chunks-panel" class="chunks-panel hidden">
+      <div class="chunks-header" onclick="toggleChunks()">
+        <span>📚 Retrieved Chunks</span>
+        <span id="chunks-count"></span>
+        <span class="chunks-hint">click any chunk to view full text</span>
+        <span class="toggle-arrow" id="chunks-arrow">▼</span>
+      </div>
+      <div id="chunks-body" class="chunks-body"></div>
+    </div>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
